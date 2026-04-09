@@ -59,6 +59,7 @@ def benchmark_suite(
             system_message_name=system_message_name,
             system_message=system_message,
             tool_output_format=tool_output_format,
+            suite_name=suite.name,
         )
     )
     with OutputLogger(str(logdir), live=live):

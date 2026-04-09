@@ -25,23 +25,29 @@ python -m agentdojo.scripts.benchmark -s shopping \
     --defense tool_filter --attack important_instructions
 ```
 
+To run with external defenses integrated in this repo layout, you can directly use:
+
+
 Before running, please export your API key, through:
 
 1. OpenAI Model: export OPENAI_API_KEY=XXX
 2. Google Model: export GOOGLE_API_KEY=XXX
-3. Open-sourced Models (Qwen, LlaMA): export OPENROUTER_API_KEY=XXX
+3. Open-sourced Models (Qwen, LlaMA, other supported models): export OPENROUTER_API_KEY=XXX
 
 ## Supported settings
 
-#### Avaliable Suites:
+#### Available Suites:
 AgentDyn supports `shopping`,`github`, and `dailylife` suites, as well as the original four suites from AgentDojo (`banking`,`slack`, `travel` and `workspace`).
 
-#### Avaliable Models: 
+#### Available Models: 
 We evaluate the following models in our paper: ``GPT_4O_MINI_2024_07_18``, ``GPT_4O_2024_08_06``, ``GEMINI_2_5_FLASH``, ``GEMINI_2_5_PRO``, ``LLAMA_3_3_70B``, ``QWEN3_235B``, ``GPT_5_1_2025_11_13``, ``GPT_5_MINI_2025_08_07``. 
 Other models supported by AgentDojo are also compatible.
 
-#### Avaliable Defenses: 
-In addition to the original defenses in AgentDojo, we provide support for [PIGuard](https://aclanthology.org/2025.acl-long.1468.pdf) and [PromptGuard2](https://huggingface.co/meta-llama/Llama-Prompt-Guard-2-86M). The complete list of defenses supported in our paper includes: ``repeat_user_prompt``, ``spotlighting_with_delimiting``, ``tool_filter``, ``transformers_pi_detector``, ``piguard_detector``, ``prompt_guard_2_detector``.
+#### Available Defenses: 
+In addition to the original defenses in AgentDojo, we provide support for [PIGuard](https://aclanthology.org/2025.acl-long.1468.pdf) and [PromptGuard2](https://huggingface.co/meta-llama/Llama-Prompt-Guard-2-86M). We also support directly invoking external defenses in this workspace: [CaMeL](https://github.com/google-research/camel-prompt-injection), [Progent](https://github.com/sunblaze-ucb/progent), [DRIFT](https://github.com/SaFo-Lab/DRIFT),.
+
+The complete list of defenses supported in our paper includes: ``repeat_user_prompt``, ``spotlighting_with_delimiting``, ``tool_filter``, ``transformers_pi_detector``, ``piguard_detector``, ``prompt_guard_2_detector``, ``camel``,  ``progent``, ``drift``.
+
 
 ## Inspect Results
 

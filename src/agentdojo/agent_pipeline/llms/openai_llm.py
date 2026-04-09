@@ -55,6 +55,12 @@ def _is_reasoning_model(model_name: str) -> bool:
     return any(model in model_name for model in _REASONING_MODELS)
 
 
+def _supports_temperature(model_name: str) -> bool:
+    lowered = model_name.lower()
+    unsupported_prefixes = ("o1", "o3", "o4", "gpt-5")
+    return not lowered.startswith(unsupported_prefixes)
+
+
 @overload
 def _content_blocks_to_openai_content_blocks(
     message: ChatUserMessage | ChatSystemMessage,
@@ -171,12 +177,13 @@ def chat_completion_request(
     reasoning_effort: ChatCompletionReasoningEffort | None,
     temperature: float | None = 0.0,
 ):
+    effective_temperature = temperature if _supports_temperature(model) else None
     return client.chat.completions.create(
         model=model,
         messages=messages,
         tools=tools or NOT_GIVEN,
         tool_choice="auto" if tools else NOT_GIVEN,
-        temperature=temperature if temperature is not None else NOT_GIVEN,
+        temperature=effective_temperature if effective_temperature is not None else NOT_GIVEN,
         reasoning_effort=reasoning_effort or NOT_GIVEN,
     )
 
@@ -244,7 +251,11 @@ class OpenAILLMToolFilter(BasePipelineElement):
             messages=openai_messages,
             tools=openai_tools or NOT_GIVEN,
             tool_choice="none",
-            temperature=self.temperature if self.temperature is not None else NOT_GIVEN,
+            temperature=(
+                self.temperature
+                if self.temperature is not None and _supports_temperature(self.model)
+                else NOT_GIVEN
+            ),
             reasoning_effort=self.reasoning_effort or NOT_GIVEN,
         )
         output = _openai_to_assistant_message(completion.choices[0].message)
