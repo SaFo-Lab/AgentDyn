@@ -565,8 +565,8 @@ class AgentPipeline(BasePipelineElement):
                 return _build_camel_pipeline(llm_name, config.defense)
             except ImportError as e:
                 raise ImportError(
-                    "Failed to load CaMeL defense. Make sure dependencies are installed in this environment "
-                    "(e.g. install from ./camel-prompt-injection)."
+                    "Failed to load CaMeL defense. Make sure CaMeL dependencies are installed in this environment "
+                    "(e.g. run 'pip install -e .' from project root, or 'pip install -e ./src/agentdojo/defenses/camel')."
                 ) from e
         if config.defense == "drift":
             if not isinstance(llm_name, str):
@@ -576,7 +576,7 @@ class AgentPipeline(BasePipelineElement):
             except ImportError as e:
                 raise ImportError(
                     "Failed to load DRIFT defense. Make sure dependencies are installed in this environment "
-                    "(e.g. install from ./DRIFT/requirements.txt)."
+                    "(e.g. run 'pip install -e .' from project root, or 'pip install -r ./src/agentdojo/defenses/drift/requirements.txt')."
                 ) from e
         if config.defense == "progent":
             tools_loop = ToolsExecutionLoop([ToolsExecutor(tool_output_formatter), llm])
