@@ -19,6 +19,28 @@ class DRIFTLLM(PromptingLLM):
         self.initial_node_checklist = "None"
         self.tool_permissions = {}
 
+    def _build_validation_error_tool_message(self, error_text, output):
+        """Build a tool-style error message so downstream adapters can use the `error` field."""
+
+        tool_call = None
+        if output.get("tool_calls") and len(output["tool_calls"]) > 0:
+            tool_call = output["tool_calls"][0]
+
+        if tool_call is None or tool_call.id is None:
+            return {
+                "role": "user",
+                "content": error_text,
+                "error": error_text,
+            }
+
+        return {
+            "role": "tool",
+            "content": "",
+            "tool_call_id": tool_call.id,
+            "tool_call": tool_call,
+            "error": error_text,
+        }
+
     def _tool_message_to_user_message(self, tool_message) -> dict:
         """It places the output of the tool call in the <function_call> tags.
         """
@@ -500,7 +522,7 @@ class DRIFTLLM(PromptingLLM):
 
                 else:
                     self.logger.info("Trajectory does not align with original ones, sending request to user.")
-                    align_error_message = {"role": "user", "content": f"[CALL ERROR] The function calling of {achieved_func} has been refused due to it does not align with original planned trajectory, please change to call other functions to complete original user query.\nRemember, do not stop working on the original user task to do other things.\nBelow is the specific Refusal Reason:\n {traj_judge_reason}.\nOriginal Planned Trajecotry:\n{self.function_trajectory}.\nAchieved Function Trajectory:\n{self.achieved_function_trajectory}.\nUser Query:\n{query}"}
+                    align_error_message = f"[CALL ERROR] The function calling of {achieved_func} has been refused due to it does not align with original planned trajectory, please change to call other functions to complete original user query.\nRemember, do not stop working on the original user task to do other things.\nBelow is the specific Refusal Reason:\n {traj_judge_reason}.\nOriginal Planned Trajecotry:\n{self.function_trajectory}.\nAchieved Function Trajectory:\n{self.achieved_function_trajectory}.\nUser Query:\n{query}"
 
                     # Send User Request
                     trajectory_user_answer = self.user_approval_request()
@@ -544,7 +566,7 @@ class DRIFTLLM(PromptingLLM):
         if not node_check_result:
             self.logger.info(f"{json_tool_calls} does not align well with checklist, sending request to user.")
 
-            align_error_message = {"role": "user", "content": f"[CALL ERROR] The function calling of {json_tool_calls} has been refused due to some parameters are not aligned with checklist, Please try an alternative method to continue fulfilling the original user query. Remember, do not stop working on the original user task to do other things.\nThe specific error:\n{node_judge_reason}\nChecklist:\n{self.node_checklist}.\nNote: the value of None denotes this value is uncertain.\nUser Query:\n{query}"}
+            align_error_message = f"[CALL ERROR] The function calling of {json_tool_calls} has been refused due to some parameters are not aligned with checklist, Please try an alternative method to continue fulfilling the original user query. Remember, do not stop working on the original user task to do other things.\nThe specific error:\n{node_judge_reason}\nChecklist:\n{self.node_checklist}.\nNote: the value of None denotes this value is uncertain.\nUser Query:\n{query}"
             
             checklist_user_answer = self.user_approval_request()
             if checklist_user_answer:
@@ -683,12 +705,12 @@ class DRIFTLLM(PromptingLLM):
         if self.args.dynamic_validation:
             error_message, output = self.trajectory_constraint_validation(to_call_function, output, query, messages)
             if error_message:
-                error_message["content"] = f"</function_error>\n{error_message}\n</function_error>"
-                return query, runtime, env, [*messages, output, error_message], extra_args
+                error_tool_message = self._build_validation_error_tool_message(error_message, output)
+                return query, runtime, env, [*messages, output, error_tool_message], extra_args
             
             error_message, output = self.checklist_constraint_validation(json_tool_calls, output, query, messages)
             if error_message:
-                error_message["content"] = f"</function_error>\n{error_message}\n</function_error>"
-                return query, runtime, env, [*messages, output, error_message], extra_args
+                error_tool_message = self._build_validation_error_tool_message(error_message, output)
+                return query, runtime, env, [*messages, output, error_tool_message], extra_args
 
         return query, runtime, env, [*messages, output], extra_args

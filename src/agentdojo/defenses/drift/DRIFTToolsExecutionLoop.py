@@ -16,6 +16,23 @@ class DRIFTToolsExecutionLoop(ToolsExecutionLoop):
         self.elements = elements
         self.max_iters = max_iters
 
+    @staticmethod
+    def _message_text(message: ChatMessage) -> str:
+        content = message.get("content", "")
+        if isinstance(content, str):
+            return content
+        if isinstance(content, list):
+            chunks = []
+            for block in content:
+                if isinstance(block, dict):
+                    chunks.append(str(block.get("content", "")))
+                else:
+                    chunks.append(str(block))
+            return "\n".join(chunks)
+        if content is None:
+            return ""
+        return str(content)
+
     def query(
         self,
         query: str,
@@ -30,7 +47,15 @@ class DRIFTToolsExecutionLoop(ToolsExecutionLoop):
         logger = Logger().get()
         for _ in range(self.max_iters):
             last_message = messages[-1]
-            if "[CALL ERROR]" not in last_message["content"]:
+            content_text = self._message_text(last_message)
+            error_text = str(last_message.get("error", "") or "")
+            has_call_error = (
+                "[CALL ERROR]" in content_text
+                or "[CALL_ERROR]" in content_text
+                or "[CALL ERROR]" in error_text
+                or "[CALL_ERROR]" in error_text
+            )
+            if not has_call_error:
                 if not last_message["role"] == "assistant":
                     break
                 if last_message["tool_calls"] is None:
