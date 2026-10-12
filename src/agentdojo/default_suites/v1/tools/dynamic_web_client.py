@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from agentdojo.functions_runtime import Depends
 from agentdojo.default_suites.v1.tools.tool_registry import register_tool
 from agentdojo.default_suites.v1.tools.file_client import Filesystem, check_node_existence, get_node_instance, add_node
-from agentdojo.default_suites.v1.tools.types import Web, WebFile, File, Permissions
+from agentdojo.default_suites.v1.tools.types import Web, WebFile, WebFunction, File, Permissions
 from agentdojo.default_suites.v1.tools.tool_registry import register_tool, get_tool
 
 class WebDatabase(BaseModel):
@@ -81,10 +81,14 @@ def post_webpage(web_database: Annotated[WebDatabase, Depends("web_database")], 
     """
     url = standardize_url(url)
     web = fetch_web_instance(web_database, url)
+    if web not in web_database.web_list:
+        # fetch_web_instance returns a new, unregistered page for an unknown URL
+        web_database.web_list.append(web)
     web.web_requests.append(url)
     web.web_content = content
     web.field_to_parameters = field_to_parameters
-    web.web_function = web_function
+    # pydantic does not validate on assignment; callers pass dicts
+    web.web_function = [WebFunction.model_validate(f) for f in web_function]
     web.download_source = download_source
 
 
